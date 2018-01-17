@@ -1,5 +1,5 @@
 var width = 480,
-  height = 1160;
+  height = 600;
 
 var scottishPostcodes = [
   'AB',
@@ -25,9 +25,9 @@ var formatNumber = d3.format(".0f");
 
 var projection = d3.geoAlbers()
   .center([0, 55.4])
-  .rotate([4.4, 0])
+  .rotate([4.4, -2])
   .parallels([50, 60])
-  .scale(1200 * 5)
+  .scale(1200 * 4)
   .translate([width / 2, height / 2]);
 
 var path = d3.geoPath()
@@ -53,7 +53,7 @@ function centre(d) {
 }
 
 d3.queue()
-  .defer(d3.json, "postcode-hi.json")
+  .defer(d3.json, "scotland-postcode.json")
   .defer(d3.tsv, "mock-data.tsv")
   .await(transform)
 
@@ -67,26 +67,26 @@ function transform(err, uk, data) {
     })
     .value();
 
-  var areas = uk.objects['uk-postcode-area'].geometries.filter(function(a) {
-    var code = a.properties.NAME.match(/^([A-Z]+)/)[1];
-    return scottishPostcodes.includes(code);
-  });
-
-  uk.objects['sco-postcode-area'] = {
-    type: 'GeometryCollection',
-    geometries: areas
-  };
-
   draw(uk, countsByPostcode);
 }
 
 function draw(uk, counts) {
+  var zoom = d3.zoom()
+    .scaleExtent([1, 8])
+    //.translateExtent([0, 0], [width, height])
+    .on("zoom", zoomed);
+
   var svg = d3.select("body").append("svg")
     .attr("width", width)
-    .attr("height", height);
+    .attr("height", height)
+    .style("border", "1px solid blue");
 
-  svg.selectAll(".subunit")
-    .data(topojson.feature(uk, uk.objects['sco-postcode-area']).features)
+  svg.call(zoom);
+
+  var g = svg.append('g');
+
+  g.selectAll(".subunit")
+    .data(topojson.feature(uk, uk.objects['uk-postcodes-xx-area']).features)
     .enter()
     .append("path")
       .attr("class", "postcode_area")
@@ -97,13 +97,23 @@ function draw(uk, counts) {
       .append("svg:title")
         .attr("transform", centre)
         .attr("dy", ".35em")
-        .text(function(d) { return d.id; });
+        .text(function(d) {
+          return d.id;
+        });
 
-  svg.append("path")
-    .datum(topojson.mesh(uk, uk.objects['sco-postcode-area'], function(a, b) {
+  var lowMesh = g.append("path")
+    .datum(topojson.mesh(uk, uk.objects['uk-postcodes-xx-area'], function(a, b) {
       return a !== b;
     }))
-    .attr("class", "mesh")
+    .attr("class", "mesh lo")
+    .attr("d", path);
+
+  var highMesh = g.append("path")
+    .datum(topojson.mesh(uk, uk.objects['uk-postcodes-xxnn-area'], function(a, b) {
+      return a !== b;
+    }))
+    .attr("class", "mesh hi")
+    .style("visibility", "hidden")
     .attr("d", path);
 
   var labelData = fillColor.range().map(function(c) {
@@ -115,9 +125,17 @@ function draw(uk, counts) {
 
   var axisGroup = svg.append("g")
       .attr("class", "axis")
-      .attr("transform", "translate(0, 700)");
+      .attr("transform", "translate(0, 550)");
 
-  axisGroup.append("text")
+  var axisBackground = axisGroup.append("rect")
+    .attr("class", "axis-bg")
+    .attr("width", 480)
+    .attr("height", 50);
+
+  var labelsGroup = axisGroup.append('g')
+    .attr("transform", "translate(15)");
+
+  labelsGroup.append("text")
     .attr("class", "title")
     .attr("fill", "#000")
     .attr("font-size", "12px")
@@ -125,7 +143,7 @@ function draw(uk, counts) {
     .attr("y", "1em")
     .text("Percentage of volunteers from each postcode area")
 
-  var keyGroup = axisGroup.append("g")
+  var keyGroup = labelsGroup.append("g")
     .attr("transform", "translate(0, 20)");
 
   keyGroup.selectAll("rect")
@@ -142,18 +160,40 @@ function draw(uk, counts) {
           return fillColor(d[0]);
         });
 
-    keyGroup.selectAll("text.ticklabel")
-      .data(labelData)
-      .enter().append("text")
-        .attr("class", "ticklabel")
-        .attr("x", "0.35em")
-        .attr("y", "1.5em")
-        .attr("font-size", "12px")
-        .attr("text-anchor", "middle")
-        .attr("dx", function(d, i) {
-          return (i * 75) + 33;
-        })
-        .text(function(d) {
-          return d[0] + " - " + d[1];
-        });
+  keyGroup.selectAll("text.ticklabel")
+    .data(labelData)
+    .enter().append("text")
+      .attr("class", "ticklabel")
+      .attr("x", "0.35em")
+      .attr("y", "1.5em")
+      .attr("font-size", "12px")
+      .attr("text-anchor", "middle")
+      .attr("dx", function(d, i) {
+        return (i * 75) + 33;
+      })
+      .text(function(d) {
+        return d[0] + " - " + d[1];
+      });
+
+  function zoomed() {
+    var t = d3.event.transform;
+
+    t.x = d3.min([t.x, 0]);
+    t.y = d3.min([t.y, 0]);
+    t.x = d3.max([t.x, (1-t.k) * width]);
+    t.y = d3.max([t.y, (1-t.k) * height]);
+
+    g.attr("transform", t);
+
+    if (t.k >= 3.5) {
+      highMesh.style("visibility", null);
+      lowMesh.style("visibility", "hidden");
+    } else {
+      highMesh.style("visibility", "hidden");
+      lowMesh.style("visibility", null);
+    }
+
+    highMesh.style("stroke-width", 0.5 / d3.event.transform.k + "px");
+    lowMesh.style("stroke-width", 0.5 / d3.event.transform.k + "px");
+  }
 }
