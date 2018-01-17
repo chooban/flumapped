@@ -95,16 +95,24 @@ function draw(uk, counts) {
         return fillColor(counts[d.properties.NAME]);
       })
       .on("mouseover", function() {
-        d3.select(this).classed("highlight", true);
+        d3.select(this)
+          .classed("highlight", true)
+          .style("fill", function(d) {
+            return d3.rgb(fillColor(counts[d.properties.NAME])).brighter(0.25);
+          });
       })
       .on("mouseout", function() {
-        d3.select(this).classed("highlight", false);
+        d3.select(this)
+          .classed("highlight", false)
+          .style("fill", function(d) {
+            return fillColor(counts[d.properties.NAME]);
+          });
       })
       .append("svg:title")
         .attr("transform", centre)
         .attr("dy", ".35em")
         .text(function(d) {
-          return d.properties.NAME;
+          return d.properties.NAME + " " + (counts[d.properties.NAME] * 100).toFixed(1) + "%";
         });
 
   var lowMesh = g.append("path")
