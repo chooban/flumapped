@@ -92,13 +92,19 @@ function draw(uk, counts) {
       .attr("class", "postcode_area")
       .attr("d", path)
       .style("fill", function(d) {
-        return fillColor(counts[d.id]);
+        return fillColor(counts[d.properties.NAME]);
+      })
+      .on("mouseover", function() {
+        d3.select(this).classed("highlight", true);
+      })
+      .on("mouseout", function() {
+        d3.select(this).classed("highlight", false);
       })
       .append("svg:title")
         .attr("transform", centre)
         .attr("dy", ".35em")
         .text(function(d) {
-          return d.id;
+          return d.properties.NAME;
         });
 
   var lowMesh = g.append("path")

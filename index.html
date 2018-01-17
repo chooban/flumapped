@@ -4,7 +4,12 @@
 <head>
   <style>
     .postcode_area {
-      fill: #777;
+      fill: #666;
+    }
+
+    .postcode_area.highlight {
+      cursor: pointer;
+      fill: #999;
     }
 
     .mesh {
@@ -12,6 +17,7 @@
       stroke: #fff;
       stroke-width: .5px;
       stroke-linejoin: round;
+      pointer-events: none;
     }
 
     .axis-bg {
