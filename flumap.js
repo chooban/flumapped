@@ -53,7 +53,7 @@ function centre(d) {
 }
 
 d3.queue()
-  .defer(d3.json, "uk-postcode-area.json")
+  .defer(d3.json, "postcode-hi.json")
   .defer(d3.tsv, "mock-data.tsv")
   .await(transform)
 
@@ -68,7 +68,8 @@ function transform(err, uk, data) {
     .value();
 
   var areas = uk.objects['uk-postcode-area'].geometries.filter(function(a) {
-    return scottishPostcodes.includes(a.id);
+    var code = a.properties.NAME.match(/^([A-Z]+)/)[1];
+    return scottishPostcodes.includes(code);
   });
 
   uk.objects['sco-postcode-area'] = {
