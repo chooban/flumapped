@@ -7,6 +7,10 @@
   fill: #999;
 }
 
+.postcode_area.inactive {
+  opacity: 0.10;
+}
+
 .mesh {
   fill: none;
   stroke-linejoin: round;

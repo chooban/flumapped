@@ -1,4 +1,4 @@
-var width = 480;
+var width = 700;
 var height = 600;
 var active = d3.select(null);
 var zoomThreshold = 3.5;
@@ -90,7 +90,6 @@ function transform(err, uk, data) {
 function draw(uk, counts) {
   var zoom = d3.zoom()
     .scaleExtent([1, 8])
-    //.translateExtent([0, 0], [width, height])
     .on("zoom", zoomed);
 
   var tooltipDiv = d3.select(".map").append("div")
@@ -99,10 +98,7 @@ function draw(uk, counts) {
 
   var svg = d3.select(".map").append("svg")
     .attr("width", width)
-    .attr("height", height)
-    .style("border", "1px solid blue");
-
-  svg.call(zoom);
+    .attr("height", height);
 
   var map = svg.append('g');
   var lowLevelView = map.append('g').classed("lowlevel", true);
@@ -116,7 +112,6 @@ function draw(uk, counts) {
       .attr("d", path)
       .style("fill", _.partial(baseFill, _.propertyOf(counts.low)))
       .on("mouseover.tooltip", function(d) {
-        console.log("Low level mouseover");
         tooltipDiv.transition()
           .duration(200)
           .style("opacity", 0.9);
@@ -145,7 +140,19 @@ function draw(uk, counts) {
           .classed("highlight", false)
           .style("fill", _.partial(baseFill, _.propertyOf(counts.low)))
       })
-      .on("click", reset);
+      .on("click", function() {
+        var node = d3.select(this);
+
+        if (node.classed('inactive')) {
+          highLevelView.selectAll('.postcode_area')
+            .filter(function(d) {
+              return node.datum().properties.NAME.startsWith(d.properties.NAME);
+            })
+            .each(clicked);
+        } else {
+          reset();
+        }
+      });
 
   var lowMesh = map.append("path")
     .datum(topojson.mesh(uk, uk.objects['uk-postcodes-xxnn-area'], function(a, b) {
@@ -163,15 +170,13 @@ function draw(uk, counts) {
       .attr("d", path)
       .style("fill", _.partial(baseFill, _.propertyOf(counts.high)))
       .on("mouseover.tooltip", function(d) {
-        if (!d3.select(this).style("fill-opacity") < 1) {
-          tooltipDiv.transition()
-            .duration(200)
-            .style("opacity", 0.9);
+        tooltipDiv.transition()
+          .duration(200)
+          .style("opacity", 0.9);
 
-          tooltipDiv.html(hoverLabel(_.propertyOf(counts.high), d))
-            .style("left", d3.event.pageX + "px")
-            .style("top", (d3.event.pageY - 14) + "px");
-        }
+        tooltipDiv.html(hoverLabel(_.propertyOf(counts.high), d))
+          .style("left", d3.event.pageX + "px")
+          .style("top", (d3.event.pageY - 14) + "px");
       })
       .on("mouseout.tooltip", function() {
         tooltipDiv.transition()
@@ -215,11 +220,11 @@ function draw(uk, counts) {
 
   var axisBackground = axisGroup.append("rect")
     .attr("class", "axis-bg")
-    .attr("width", 480)
+    .attr("width", width)
     .attr("height", 50);
 
   var labelsGroup = axisGroup.append('g')
-    .attr("transform", "translate(15)");
+    .attr("transform", "translate(125)");
 
   labelsGroup.append("text")
     .attr("class", "title")
@@ -256,6 +261,8 @@ function draw(uk, counts) {
       .attr("text-anchor", "middle")
       .attr("dx", function(d, i) { return (i * 75) + 33; })
       .text(function(d) { return d[0] + " - " + d[1]; });
+
+  svg.call(zoom);
 
   function hoverLabel(counts, d) {
     var c = counts(d.properties.NAME);
@@ -312,23 +319,26 @@ function draw(uk, counts) {
 
     lowLevelView
       .selectAll(".postcode_area")
-      .style("opacity", function(d) {
+      .classed("inactive", function(d) {
         return (d.properties.NAME.startsWith(activeDatum.NAME))
-          ? 1
-          : 0.2;
+          ? false
+          : true;
       });
 
     active
       .style("stroke-width", "1px")
       .style("stroke-colour", "black");
 
-    var bounds = path.bounds(d),
+    var hsBounds = [[200, 205],[225, 355]];
+
+    var bounds = activeDatum.NAME === 'HS' ? hsBounds : path.bounds(d),
         dx = bounds[1][0] - bounds[0][0],
         dy = bounds[1][1] - bounds[0][1],
         x = (bounds[0][0] + bounds[1][0]) / 2,
         y = (bounds[0][1] + bounds[1][1]) / 2,
         scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height))),
         translate = [width / 2 - scale * x, height / 2 - scale * y];
+
 
     svg.transition()
       .duration(750)
