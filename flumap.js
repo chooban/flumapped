@@ -1,6 +1,7 @@
 var width = 480;
 var height = 600;
 var active = d3.select(null);
+var zoomThreshold = 3.5;
 
 var scottishPostcodes = [
   'AB',
@@ -71,15 +72,14 @@ function transform(err, uk, data) {
 
   var percentagesLow = _.chain(data)
     .countBy(function(e) { return e.postcode; })
-    .mapValues(function(e) {
+    .mapValues(function(e, key) {
+      var pc = key.match(/^([A-Z]+)/)[1];
       return {
         total: e,
-        share: e / data.length
+        share: e / percentagesHigh[pc].total
       };
     })
     .value();
-
-  console.log(percentagesHigh);
 
   draw(uk, {
     high: percentagesHigh,
@@ -93,60 +93,113 @@ function draw(uk, counts) {
     //.translateExtent([0, 0], [width, height])
     .on("zoom", zoomed);
 
-  var svg = d3.select("body").append("svg")
+  var tooltipDiv = d3.select(".map").append("div")
+    .classed("tooltip", true)
+    .style("opacity", 0);
+
+  var svg = d3.select(".map").append("svg")
     .attr("width", width)
     .attr("height", height)
     .style("border", "1px solid blue");
 
   svg.call(zoom);
 
-  var g = svg.append('g')
-    .classed("highlevel", true);
+  var map = svg.append('g');
+  var lowLevelView = map.append('g').classed("lowlevel", true);
+  var highLevelView = map.append('g').classed("highlevel", true);
 
-  g.selectAll(".subunit")
+  lowLevelView.selectAll(".postcode_area")
+    .data(topojson.feature(uk, uk.objects['uk-postcodes-xxnn-area']).features)
+    .enter()
+    .append("path")
+      .attr("class", "postcode_area")
+      .attr("d", path)
+      .style("fill", _.partial(baseFill, _.propertyOf(counts.low)))
+      .on("mouseover.tooltip", function(d) {
+        console.log("Low level mouseover");
+        tooltipDiv.transition()
+          .duration(200)
+          .style("opacity", 0.9);
+
+        tooltipDiv.html(hoverLabel(_.propertyOf(counts.low), d))
+          .style("left", d3.event.pageX + "px")
+          .style("top", (d3.event.pageY - 14) + "px");
+      })
+      .on("mouseout.tooltip", function() {
+        tooltipDiv.transition()
+          .duration(500)
+          .style("opacity", 0);
+      })
+      .on("mousemove.tooltip", function() {
+        tooltipDiv
+          .style("left", d3.event.pageX + "px")
+          .style("top", (d3.event.pageY - 14) + "px");
+      })
+      .on("mouseover", function() {
+        d3.select(this)
+          .classed("highlight", true)
+          .style("fill", _.partial(fillColorOnHover, _.propertyOf(counts.low)));
+      })
+      .on("mouseout", function() {
+        d3.select(this)
+          .classed("highlight", false)
+          .style("fill", _.partial(baseFill, _.propertyOf(counts.low)))
+      })
+      .on("click", reset);
+
+  var lowMesh = map.append("path")
+    .datum(topojson.mesh(uk, uk.objects['uk-postcodes-xxnn-area'], function(a, b) {
+      return a !== b;
+    }))
+    .attr("class", "mesh lo")
+    .style("visibility", "hidden")
+    .attr("d", path);
+
+  highLevelView.selectAll(".postcode_area")
     .data(topojson.feature(uk, uk.objects['uk-postcodes-xx-area']).features)
     .enter()
     .append("path")
       .attr("class", "postcode_area")
       .attr("d", path)
-      .style("fill", function(d) {
-        return fillColor(counts.high[d.properties.NAME].share);
+      .style("fill", _.partial(baseFill, _.propertyOf(counts.high)))
+      .on("mouseover.tooltip", function(d) {
+        if (!d3.select(this).style("fill-opacity") < 1) {
+          tooltipDiv.transition()
+            .duration(200)
+            .style("opacity", 0.9);
+
+          tooltipDiv.html(hoverLabel(_.propertyOf(counts.high), d))
+            .style("left", d3.event.pageX + "px")
+            .style("top", (d3.event.pageY - 14) + "px");
+        }
       })
-      .on("mouseover", function() {
+      .on("mouseout.tooltip", function() {
+        tooltipDiv.transition()
+          .duration(500)
+          .style("opacity", 0);
+      })
+      .on("mousemove.tooltip", function() {
+        tooltipDiv
+          .style("left", d3.event.pageX + "px")
+          .style("top", (d3.event.pageY - 14) + "px");
+      })
+      .on("mouseover.highlight", function(d) {
         d3.select(this)
           .classed("highlight", true)
-          .style("fill", function(d) {
-            return d3.rgb(fillColor(counts.high[d.properties.NAME].share)).brighter(0.25);
-          });
+          .style("fill", _.partial(fillColorOnHover, _.propertyOf(counts.high)));
       })
-      .on("mouseout", function() {
+      .on("mouseout.highlight", function() {
         d3.select(this)
           .classed("highlight", false)
-          .style("fill", function(d) {
-            return fillColor(counts.high[d.properties.NAME].share);
-          });
+          .style("fill", _.partial(baseFill, _.propertyOf(counts.high)));
       })
-      .on("click", clicked)
-      .append("svg:title")
-        .attr("transform", centre)
-        .attr("dy", ".35em")
-        .text(function(d) {
-          return d.properties.NAME + " " + (counts.high[d.properties.NAME].share * 100).toFixed(1) + "%";
-        });
+      .on("click", clicked);
 
-  var lowMesh = g.append("path")
+  var highMesh = map.append("path")
     .datum(topojson.mesh(uk, uk.objects['uk-postcodes-xx-area'], function(a, b) {
       return a !== b;
     }))
-    .attr("class", "mesh lo")
-    .attr("d", path);
-
-  var highMesh = g.append("path")
-    .datum(topojson.mesh(uk, uk.objects['uk-postcodes-xxnn-area'], function(a, b) {
-      return a !== b;
-    }))
     .attr("class", "mesh hi")
-    .style("visibility", "hidden")
     .attr("d", path);
 
   var labelData = fillColor.range().map(function(c) {
@@ -201,12 +254,27 @@ function draw(uk, counts) {
       .attr("y", "1.5em")
       .attr("font-size", "12px")
       .attr("text-anchor", "middle")
-      .attr("dx", function(d, i) {
-        return (i * 75) + 33;
-      })
-      .text(function(d) {
-        return d[0] + " - " + d[1];
-      });
+      .attr("dx", function(d, i) { return (i * 75) + 33; })
+      .text(function(d) { return d[0] + " - " + d[1]; });
+
+  function hoverLabel(counts, d) {
+    var c = counts(d.properties.NAME);
+    var share = c == null ? 0 : c.share;
+
+    return d.properties.NAME + " " + (share * 100).toFixed(1) + "%";
+  }
+
+  function fillColorOnHover(counts, d) {
+    var c = counts(d.properties.NAME);
+    return c == null
+      ? fillColor(0)
+      : d3.rgb(fillColor(c.share)).brighter(0.25);
+  }
+
+  function baseFill(counts, d) {
+    var c = counts(d.properties.NAME);
+    return c == null ? fillColor(0) : fillColor(c.share);
+  }
 
   function zoomed() {
     var t = d3.event.transform;
@@ -216,17 +284,22 @@ function draw(uk, counts) {
     t.x = d3.max([t.x, (1-t.k) * width]);
     t.y = d3.max([t.y, (1-t.k) * height]);
 
-    g.attr("transform", t);
+    map.attr("transform", t);
 
-    if (t.k >= 3.5) {
-      highMesh.style("visibility", null);
-      lowMesh.style("visibility", "hidden");
-    } else {
-      highMesh.style("visibility", "hidden");
+    if (t.k >= zoomThreshold) {
       lowMesh.style("visibility", null);
+
+      highLevelView
+        .style("display", "none");
+
+    } else {
+      highLevelView
+        .style("display", "inline");
+
+      lowMesh.style("visibility", "hidden");
     }
 
-    highMesh.style("stroke-width", 0.5 / d3.event.transform.k + "px");
+    highMesh.style("stroke-width", 0.75 / d3.event.transform.k + "px");
     lowMesh.style("stroke-width", 0.5 / d3.event.transform.k + "px");
   }
 
@@ -234,6 +307,20 @@ function draw(uk, counts) {
     if (active.node() === this) return reset();
 
     active = d3.select(this);
+
+    var activeDatum = active.datum().properties;
+
+    lowLevelView
+      .selectAll(".postcode_area")
+      .style("opacity", function(d) {
+        return (d.properties.NAME.startsWith(activeDatum.NAME))
+          ? 1
+          : 0.2;
+      });
+
+    active
+      .style("stroke-width", "1px")
+      .style("stroke-colour", "black");
 
     var bounds = path.bounds(d),
         dx = bounds[1][0] - bounds[0][0],
@@ -249,6 +336,8 @@ function draw(uk, counts) {
   }
 
   function reset() {
+    active = d3.select(null);
+
     svg.transition()
       .duration(750)
       .call(zoom.transform, d3.zoomIdentity);

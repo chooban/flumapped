@@ -2,32 +2,7 @@
 <meta charset="utf-8">
 
 <head>
-  <style>
-    .postcode_area {
-      fill: #666;
-    }
-
-    .postcode_area.highlight {
-      cursor: pointer;
-      fill: #999;
-    }
-
-    .mesh {
-      fill: none;
-      stroke: #fff;
-      stroke-width: .5px;
-      stroke-linejoin: round;
-      pointer-events: none;
-    }
-
-    .axis-bg {
-      fill: white;
-    }
-
-    .axis text {
-      fill: black;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css"></link>
   <script src="https://d3js.org/d3.v4.min.js"></script>
   <script src="https://d3js.org/topojson.v1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.4/lodash.min.js"></script>
@@ -35,6 +10,8 @@
 
 <body>
   <script src="flumap.js"></script>
+
+  <div class="map"></div>
 </body>
 
 </html>
