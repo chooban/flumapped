@@ -17,3 +17,10 @@ python -m SimpleHTTPServer
 ```
 
 Now open a browser and load this page: http://localhost:8000
+
+# Creating Your Own Data
+
+If you have information in a TSV file in the order age, gender, postcode (please include a header line as well) then you
+can upload it in the form and see how it displays. If you like the look of it then download the transformed data with
+the link at the bottom. You can then embed it on a web page using the [example](example.html) example as a
+template.

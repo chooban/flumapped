@@ -1,93 +1,37 @@
-var width = 700;
-var height = 600;
-var active = d3.select(null);
-var zoomThreshold = 3.5;
-
-var scottishPostcodes = [
-  'AB',
-  'DD',
-  'DG',
-  'EH',
-  'FK',
-  'G',
-  'HS',
-  'IV',
-  'KA',
-  'KW',
-  'KY',
-  'ML',
-  'PA',
-  'PH',
-  'TD',
-  'ZE'
-];
-
-var formatPercent = d3.format(".0%");
-var formatNumber = d3.format(".0f");
-
-var projection = d3.geoAlbers()
-  .center([0, 55.4])
-  .rotate([4.4, -2])
-  .parallels([50, 60])
-  .scale(1200 * 4)
-  .translate([width / 2, height / 2]);
-
-var path = d3.geoPath()
-  .projection(projection);
-
-var fillColor = d3.scaleThreshold()
-  .domain([0.01, 0.02, 0.05, 0.1, 0.25])
-  .range(["#f2f0f7", "#dadaeb", "#bcbddc", "#9e9ac8", "#756bb1", "#54278f"]);
-
-var x = d3.scaleLinear()
-  .domain([0, 1])
-  .range([0, 240]);
-
-var xAxis = d3.axisBottom(x)
-  .tickSize(13)
-  .tickValues(fillColor.domain())
-  .tickFormat(function(d) {
-    return d === 0.5 ? formatPercent(d) : formatNumber(100 * d);
-  });
-
-function centre(d) {
-  return "translate(" + path.centroid(d) + ")";
-}
-
-d3.queue()
-  .defer(d3.json, "scotland-postcode.json")
-  .defer(d3.tsv, "mock-data.tsv")
-  .await(transform)
-
-function transform(err, uk, data) {
-  var percentagesHigh = _.chain(data)
-    .countBy(function(e) { return e.postcode.match(/^([A-Z]+)/)[1]; })
-    .mapValues(function(e) {
-      return {
-        total: e,
-        share: e / data.length
-      };
-    })
-    .value();
-
-  var percentagesLow = _.chain(data)
-    .countBy(function(e) { return e.postcode; })
-    .mapValues(function(e, key) {
-      var pc = key.match(/^([A-Z]+)/)[1];
-      return {
-        total: e,
-        share: e / percentagesHigh[pc].total
-      };
-    })
-    .value();
-
-  draw(uk, {
-    high: percentagesHigh,
-    low: percentagesLow
-  });
-}
-
 function draw(uk, counts) {
+  var width = 700;
+  var height = 600;
+  var active = d3.select(null);
+  var zoomThreshold = 3.5;
+
+  var formatPercent = d3.format(".0%");
+  var formatNumber = d3.format(".0f");
+
+  var projection = d3.geoAlbers()
+    .center([0, 55.4])
+    .rotate([4.4, -2])
+    .parallels([50, 60])
+    .scale(1200 * 4)
+    .translate([width / 2, height / 2]);
+
+  var path = d3.geoPath()
+    .projection(projection);
+
+  var fillColor = d3.scaleThreshold()
+    .domain([0.01, 0.02, 0.05, 0.1, 0.25])
+    .range(["#f2f0f7", "#dadaeb", "#bcbddc", "#9e9ac8", "#756bb1", "#54278f"]);
+
+  var x = d3.scaleLinear()
+    .domain([0, 1])
+    .range([0, 240]);
+
+  var xAxis = d3.axisBottom(x)
+    .tickSize(13)
+    .tickValues(fillColor.domain())
+    .tickFormat(function(d) {
+      return d === 0.5 ? formatPercent(d) : formatNumber(100 * d);
+    });
+
   var zoom = d3.zoom()
     .scaleExtent([1, 8])
     .on("zoom", zoomed);
@@ -96,9 +40,11 @@ function draw(uk, counts) {
     .classed("tooltip", true)
     .style("opacity", 0);
 
-  var svg = d3.select(".map").append("svg")
-    .attr("width", width)
-    .attr("height", height);
+  var svg = d3.select(".map")
+    .html("")
+    .append("svg")
+      .attr("width", width)
+      .attr("height", height);
 
   var map = svg.append('g');
   var lowLevelView = map.append('g').classed("lowlevel", true);

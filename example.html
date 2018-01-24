@@ -7,33 +7,21 @@
   <script src="https://d3js.org/topojson.v1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.4/lodash.min.js"></script>
   <script src="flumap.js"></script>
-  <script src="process.js"></script>
-  <script src="upload.js"></script>
 </head>
 
 <body>
-  <div>
-    <a href="example.html">See the example with already transformed data</a>
-  </div>
-
-  <div class="uploader">
-    <input
-      type="file"
-      id="fileupload"
-      onChange="uploadFile(this.files[0])"
-    />
-  </div>
 
   <div class="map"></div>
 
   <script>
   d3.queue()
     .defer(d3.json, "scotland-postcode.json")
-    .defer(d3.tsv, "mock-data.tsv")
+    .defer(d3.json, "flu-map-data.json")
     .await(function(err, map, data) {
-      draw(map, transform(data));
+      draw(map, data);
     });
   </script>
 </body>
 
 </html>
+
