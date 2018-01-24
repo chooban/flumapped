@@ -36,15 +36,15 @@ function draw(uk, counts) {
     .scaleExtent([1, 8])
     .on("zoom", zoomed);
 
-  var tooltipDiv = d3.select(".map").append("div")
-    .classed("tooltip", true)
-    .style("opacity", 0);
-
   var svg = d3.select(".map")
     .html("")
     .append("svg")
       .attr("width", width)
       .attr("height", height);
+
+  var tooltipDiv = d3.select(".map").append("div")
+    .classed("tooltip", true)
+    .style("opacity", 0);
 
   var map = svg.append('g');
   var lowLevelView = map.append('g').classed("lowlevel", true);
