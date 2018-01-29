@@ -6,9 +6,9 @@
   <script src="https://d3js.org/d3.v4.min.js"></script>
   <script src="https://d3js.org/topojson.v1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.4/lodash.min.js"></script>
-  <script src="flumap.js"></script>
-  <script src="process.js"></script>
-  <script src="upload.js"></script>
+  <script src="js/flumap.js"></script>
+  <script src="js/process.js"></script>
+  <script src="js/upload.js"></script>
 </head>
 
 <body>
@@ -28,7 +28,7 @@
 
   <script>
   d3.queue()
-    .defer(d3.json, "scotland-postcode.json")
+    .defer(d3.json, "scotland-postcode.topo.json")
     .defer(d3.tsv, "mock-data.tsv")
     .await(function(err, map, data) {
       draw(map, transform(data));
