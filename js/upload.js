@@ -1,7 +1,5 @@
 function uploadFile(file) {
-  if (window.File && window.FileReader && window.FileList && window.Blob) {
-    // Great success! All the File APIs are supported.
-  } else {
+  if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
     alert('The File APIs are not fully supported in this browser.');
   }
 
@@ -16,10 +14,15 @@ function uploadFile(file) {
     var transformedData = transform(tsv);
 
     d3.queue()
-      .defer(d3.json, "scotland-postcode.json")
+      .defer(d3.json, "data/scotland-postcode.topo.json")
       .await(function(err, map) {
         download(JSON.stringify(transformedData), "flu-map-data.json");
-        draw(map, transformedData);
+        d3.select(".map")
+          .datum({
+            map: map,
+            data: transformedData
+          })
+          .call(flumap());
       });
   };
 

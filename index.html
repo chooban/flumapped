@@ -28,10 +28,17 @@
 
   <script>
   d3.queue()
-    .defer(d3.json, "scotland-postcode.topo.json")
-    .defer(d3.tsv, "mock-data.tsv")
+    .defer(d3.json, "data/scotland-postcode.topo.json")
+    .defer(d3.tsv, "data/mock-data.tsv")
     .await(function(err, map, data) {
-      draw(map, transform(data));
+      var mapComponent = flumap();
+
+      d3.select(".map")
+        .datum({
+          map: map,
+          data: transform(data)
+        })
+        .call(mapComponent);
     });
   </script>
 </body>

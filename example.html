@@ -15,10 +15,15 @@
 
   <script>
   d3.queue()
-    .defer(d3.json, "scotland-postcode.topo.json")
-    .defer(d3.json, "flu-map-data.json")
+    .defer(d3.json, "data/scotland-postcode.topo.json")
+    .defer(d3.json, "data/flu-map-data.json")
     .await(function(err, map, data) {
-      draw(map, data);
+      d3.select(".map")
+        .datum({
+          map: map,
+          data: data
+        })
+        .call(flumap());
     });
   </script>
 </body>

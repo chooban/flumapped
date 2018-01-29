@@ -1,3 +1,7 @@
+.map {
+  display: inline-block;
+}
+
 .postcode_area {
   fill: #666;
 }
@@ -46,4 +50,15 @@
   border: 0px;
   border-radius: 8px;
   pointer-events: none;
+}
+
+.title {
+  fill: #000;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.ticklabel {
+  font-size: 12px;
+  text-anchor: middle;
 }
