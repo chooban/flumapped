@@ -56,6 +56,11 @@ function flumap() {
     selection.each(function(d, i) {
       var uk = d.map;
       var counts = d.data;
+      var features = topojson.feature(uk, uk.objects['uk-postcodes-xxnn-area']).features;
+      var centroids = _.chain(features)
+        .keyBy('properties.NAME')
+        .mapValues(function(f) { return path.centroid(f); })
+        .value();
 
       var svg = d3.select(this)
         .html("")
@@ -76,7 +81,7 @@ function flumap() {
       var highLevelView = map.append('g').classed("highlevel", true);
 
       lowLevelView.selectAll(".postcode_area")
-        .data(topojson.feature(uk, uk.objects['uk-postcodes-xxnn-area']).features)
+        .data(features)
         .enter()
         .append("path")
           .attr("class", "postcode_area")
@@ -91,16 +96,8 @@ function flumap() {
               .style("left", d3.event.pageX + "px")
               .style("top", (d3.event.pageY - 14) + "px");
           })
-          .on("mouseout.tooltip", function() {
-            tooltipDiv.transition()
-              .duration(500)
-              .style("opacity", 0);
-          })
-          .on("mousemove.tooltip", function() {
-            tooltipDiv
-              .style("left", d3.event.pageX + "px")
-              .style("top", (d3.event.pageY - 14) + "px");
-          })
+          .on("mouseout.tooltip", hideTooltip)
+          .on("mousemove.tooltip", moveTooltip)
           .on("mouseover", function() {
             d3.select(this)
               .classed("highlight", true)
@@ -149,16 +146,8 @@ function flumap() {
               .style("left", d3.event.pageX + "px")
               .style("top", (d3.event.pageY - 14) + "px");
           })
-          .on("mouseout.tooltip", function() {
-            tooltipDiv.transition()
-              .duration(500)
-              .style("opacity", 0);
-          })
-          .on("mousemove.tooltip", function() {
-            tooltipDiv
-              .style("left", d3.event.pageX + "px")
-              .style("top", (d3.event.pageY - 14) + "px");
-          })
+          .on("mouseout.tooltip", hideTooltip)
+          .on("mousemove.tooltip", moveTooltip)
           .on("mouseover.highlight", function(d) {
             d3.select(this)
               .classed("highlight", true)
@@ -229,6 +218,18 @@ function flumap() {
           .text(function(d) { return d[0] + " - " + d[1]; });
 
       svg.call(zoom);
+
+      function moveTooltip() {
+        tooltipDiv
+          .style("left", d3.event.pageX + "px")
+          .style("top", (d3.event.pageY - 14) + "px");
+      }
+
+      function hideTooltip() {
+        tooltipDiv.transition()
+          .duration(500)
+          .style("opacity", 0);
+      }
 
       function zoomed() {
         var t = d3.event.transform;

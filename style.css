@@ -62,3 +62,9 @@
   font-size: 12px;
   text-anchor: middle;
 }
+
+.centroid {
+  fill: #f00;
+  stroke: #000;
+  stroke-width: 0.5px;
+}
